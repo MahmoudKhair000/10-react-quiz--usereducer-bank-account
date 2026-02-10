@@ -1,4 +1,4 @@
-import { act, useReducer, useState } from "react";
+import { act, useReducer, useState, useRef } from "react";
 import "./styles.css";
 
 /*
@@ -26,9 +26,18 @@ const initialState = {
 };
 
 export default function App() {
+  // const [openAmount, setOpenAmount] = useState(700);
+  const openInput = useRef(null);
+  // const [deposit, setDeposit] = useState(300);
+  const depositInput = useRef(null);
+  // const [withdrawal, setWithdrawal] = useState(300);
+  const withdrawInput = useRef(null);
+  // const [requestedLoan, setRequestedLoan] = useState(2000);
+  const loanInput = useRef(null);
+
   function bankReducer(state, action) {
     switch (action.type) {
-      // Opening the account with a balance of 500
+      // Opening the account with a balance of input value
       case "OPEN_ACCOUNT":
         if (!state.isActive) {
           console.log("account opened");
@@ -36,13 +45,20 @@ export default function App() {
         } else {
           return state;
         }
-      // Deposit of 150
+      // Deposit of input value
       case "DEPOSIT":
         return { ...state, balance: state.balance + action.amount };
-      // Withdrawal of 50
+      // Withdrawal of input value
       case "WITHDRAW":
-        return { ...state, balance: state.balance - action.amount };
-      // Requesting the loan
+        if (state.balance >= action.amount) {
+          return { ...state, balance: state.balance - action.amount };
+        } else {
+          console.log("Insufficient funds");
+          // Update the input value to the current balance
+          withdrawInput.current.value = String(state.balance);
+          return state;
+        }
+      // Requesting a loan of input value
       case "REQUEST_LOAN":
         if (state.loan === 0) {
           return {
@@ -69,110 +85,135 @@ export default function App() {
         }
       // break; // stops here so next case isn't executed.
       default:
-        return state;
+        throw new Error("Unknown Transaction");
     }
   }
-
-  const [accountState, bankDispatch] = useReducer(bankReducer, initialState);
-
-  const [openAmount, setOpenAmount] = useState(700);
-  const [requestedLoan, setRequestedLoan] = useState(2000);
-  const [deposit, setDeposit] = useState(300);
-  const [withdrawal, setWithdrawal] = useState(300);
+  const [account, bankDispatch] = useReducer(bankReducer, initialState);
 
   return (
     <div className="App">
       <h1>useReducer Bank Account</h1>
-      <p>Balance: {accountState.balance}</p>
-      <p>Loan: {accountState.loan}</p>
+      <p>Balance: {account.balance}</p>
+      <p>Loan: {account.loan}</p>
+      {/* Using useRef works, but we need to make sure the value is valid, so we can add a check before dispatching the action because useRef doesn't trigger a re-render */}
 
+      {/* Opening Account */}
       <p>
         <button
           onClick={() => {
-            bankDispatch({ type: "OPEN_ACCOUNT", amount: openAmount });
+            bankDispatch({
+              type: "OPEN_ACCOUNT",
+              amount: Number(openInput.current.value),
+            });
           }}
-          disabled={accountState.isActive}
+          disabled={account.isActive}
         >
-          Open account with:{" "}
-          <input
-            type="number"
-            min={500}
-            value={openAmount}
-            disabled={accountState.isActive}
-            onChange={(e) => setOpenAmount(e.target.value)}
-          />
+          Open account with
         </button>
-      </p>
-      <p>
         <input
           type="number"
-          min={100}
-          value={deposit}
-          onChange={(e) => setDeposit(e.target.value)}
+          ref={openInput}
+          defaultValue={500}
+          min={500}
+          max={2000}
+          step={100}
+          disabled={account.isActive}
         />
+      </p>
+      {/* Money Deposit */}
+      <p>
         <button
           onClick={() => {
-            bankDispatch({ type: "DEPOSIT", amount: deposit });
+            bankDispatch({
+              type: "DEPOSIT",
+              amount: Number(depositInput.current.value),
+            });
           }}
-          disabled={!accountState.isActive}
+          disabled={!account.isActive}
         >
           Deposit
         </button>
-      </p>
-      <p>
         <input
           type="number"
+          ref={depositInput}
+          defaultValue={500}
           min={100}
-          value={withdrawal}
-          onChange={(e) => setWithdrawal(e.target.value)}
+          max={5000}
+          step={100}
+          disabled={!account.isActive}
         />
+      </p>
+      {/* Money Withdrawal */}
+      <p>
         <button
           onClick={() => {
-            bankDispatch({ type: "WITHDRAW", amount: withdrawal });
+            bankDispatch({
+              type: "WITHDRAW",
+              amount: Number(withdrawInput.current.value),
+            });
           }}
-          disabled={!accountState.isActive}
+          disabled={!(account.isActive && account.balance > 0)}
         >
           Withdraw
         </button>
+        <input
+          type="number"
+          ref={withdrawInput}
+          defaultValue={300}
+          min={100}
+          max={account.balance}
+          step={100}
+          disabled={!(account.isActive && account.balance > 0)}
+        />
       </p>
+      {/* Request Loan */}
       <p>
         <button
           onClick={() => {
-            bankDispatch({ type: "REQUEST_LOAN", amount: requestedLoan });
+            bankDispatch({
+              type: "REQUEST_LOAN",
+              amount: Number(loanInput.current.value),
+            });
           }}
-          disabled={!(accountState.isActive && accountState.loan === 0)}
+          disabled={!(account.isActive && account.loan === 0)}
         >
-          Request a loan of:{" "}
-          <input
-            type="number"
-            min={0}
-            value={requestedLoan}
-            disabled={!(accountState.isActive && accountState.loan === 0)}
-            onChange={(e) => setRequestedLoan(e.target.value)}
-          />
+          Request a loan
         </button>
+        <input
+          type="number"
+          ref={loanInput}
+          defaultValue={5000}
+          min={5000}
+          max={50000}
+          step={1000}
+          disabled={!(account.isActive && account.loan === 0)}
+        />
       </p>
+      {/* Pay Loan */}
       <p>
         <button
           onClick={() => {
-            bankDispatch({ type: "PAY_LOAN", amount: accountState.loan });
+            bankDispatch({ type: "PAY_LOAN", amount: account.loan });
           }}
-          disabled={accountState.loan === 0}
+          disabled={
+            !(
+              account.loan !== 0 &&
+              account.isActive &&
+              account.balance >= account.loan
+            )
+          }
         >
           Pay your loan
         </button>
       </p>
+      {/* Close Account */}
       <p>
         <button
           onClick={() => {
             bankDispatch({ type: "CLOSE_ACCOUNT" });
           }}
           disabled={
-            !(
-              accountState.isActive &&
-              accountState.balance === 0 &&
-              accountState.loan === 0
-            )
+            !(account.isActive && account.balance === 0 && account.loan === 0)
           }
         >
           Close account
