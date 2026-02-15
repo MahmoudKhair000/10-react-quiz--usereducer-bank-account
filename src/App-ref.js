@@ -1,4 +1,4 @@
-import { act, useReducer, useState, useRef } from "react";
+import { useReducer, useRef } from "react";
 import "./styles.css";
 
 /*
