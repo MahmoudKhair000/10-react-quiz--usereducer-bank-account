@@ -47,10 +47,12 @@ export default function App() {
         }
       // Deposit of input value
       case "DEPOSIT":
+        console.log(`Depositing: ${action.amount}`);
         return { ...state, balance: state.balance + action.amount };
       // Withdrawal of input value
       case "WITHDRAW":
         if (state.balance >= action.amount) {
+          console.log(`Withdrawing: ${action.amount}`);
           return { ...state, balance: state.balance - action.amount };
         } else {
           console.log("Insufficient funds");
@@ -61,17 +63,20 @@ export default function App() {
       // Requesting a loan of input value
       case "REQUEST_LOAN":
         if (state.loan === 0) {
+          console.log(`Requesting loan: ${action.amount}`);
           return {
             ...state,
             balance: state.balance + action.amount,
             loan: state.loan + action.amount,
           };
         } else {
+          console.log("You already have a loan");
           return state;
         }
       // Paying the loan
       case "PAY_LOAN":
         if (state.loan !== 0) {
+          console.log(`Paying your loan`);
           return { ...state, balance: state.balance - state.loan, loan: 0 };
         } else {
           return state;
@@ -79,12 +84,14 @@ export default function App() {
       // Closing the account if there are no balance and loan
       case "CLOSE_ACCOUNT":
         if (state.balance === 0 && state.loan === 0) {
+          console.log("Closing account");
           return { ...state, isActive: false, balance: 0, loan: 0 };
         } else {
           return state;
         }
       // break; // stops here so next case isn't executed.
       default:
+        console.log("Unknown Transaction");
         throw new Error("Unknown Transaction");
     }
   }
